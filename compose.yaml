@@ -1,0 +1,12 @@
+# OpenSearch percolator 実装（coupon.percolator=opensearch）の手元検証用。
+#   docker compose up -d
+#   ./gradlew bootRun --args='--coupon.percolator=opensearch'
+services:
+  opensearch:
+    image: opensearchproject/opensearch:2.19.1
+    environment:
+      - discovery.type=single-node
+      - DISABLE_SECURITY_PLUGIN=true
+      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
