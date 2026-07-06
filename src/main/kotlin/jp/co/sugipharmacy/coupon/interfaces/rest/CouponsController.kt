@@ -57,9 +57,10 @@ class CouponsController(
      * 消費済み・選択状態・SUSPENDED の差し引きは行わない（BFF の責務）。
      */
     @Operation(
-        summary = "クーポン一覧取得（属性に基づく該当判定＋全員配信の付与）",
-        description = "percolate 該当の SEGMENT（有効期間内）∪ 有効期間内の ALL。" +
-            "消費済み・選択状態・SUSPENDED の差し引きは行わない（BFF の責務）。",
+        summary = "クーポン一覧取得（属性に基づく該当判定＋全員配信の付与。差し引きなしの生集合）",
+        description = "percolate 該当の SEGMENT（有効期間内）∪ 有効期間内の ALL の生集合を返す。" +
+            "消費済み・選択状態・SUSPENDED の差し引きは行わない（会員向け表示一覧の合成は " +
+            "POST /members/{memberId}/coupon-list、BFF 経路の差し引きは BFF の責務）。",
     )
     @ApiResponse(responseCode = "200", description = "該当クーポン（ID＋distributionType）の一覧")
     @ApiResponse(

@@ -4,16 +4,16 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.HttpStatus
-import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.server.ResponseStatusException
 
 /**
  * MVP境界の明示。以下は NCP-2892 API仕様に載る本サービスの提供面だが、
- * 今回のMVPでは実装しない（501）。中核＝逆引き該当判定に集中する。
+ * 今回のMVPでは実装しない（501）。クーポン読み取りモデル・coupon-admin・外部連携の領分。
+ * 会員キーの操作（選択・お気に入り・利用・付与・ID統合）はここではなく
+ * member-coupon-state モジュール（`member` パッケージ）が持つ。
  */
 @RestController
 @Tag(name = "stubs", description = "MVP対象外のAPI面（NCP-2892 API仕様には載るが本MVPでは未実装）。常に 501 を返す。")
@@ -27,51 +27,6 @@ class StubsController {
     @Operation(summary = "クーポン詳細情報取得 / 全件取得")
     @GetMapping("/coupons/details")
     fun couponDetails(): Nothing = notImplemented("クーポン詳細情報取得 / 全件取得")
-
-    /** クーポン選択更新 */
-    @Operation(summary = "クーポン選択更新")
-    @PutMapping("/coupons/selection")
-    fun selection(): Nothing = notImplemented("クーポン選択更新")
-
-    /** クーポンお気に入り更新 */
-    @Operation(summary = "クーポンお気に入り更新")
-    @PutMapping("/coupons/favorite")
-    fun favorite(): Nothing = notImplemented("クーポンお気に入り更新")
-
-    /** ウェルカムクーポン登録 */
-    @Operation(summary = "ウェルカムクーポン登録")
-    @PostMapping("/coupons/welcome")
-    fun welcome(): Nothing = notImplemented("ウェルカムクーポン登録")
-
-    /** イベント型クーポン登録 */
-    @Operation(summary = "イベント型クーポン登録")
-    @PostMapping("/coupons/event")
-    fun event(): Nothing = notImplemented("イベント型クーポン登録")
-
-    /** 使用済み・顧客選択クーポン取得（POS） */
-    @Operation(summary = "使用済み・顧客選択クーポン取得（POS）")
-    @GetMapping("/pos/coupons/selected")
-    fun posSelected(): Nothing = notImplemented("使用済み・顧客選択クーポン取得（POS）")
-
-    /** クーポン利用更新（POS） */
-    @Operation(summary = "クーポン利用更新（POS）")
-    @PutMapping("/pos/coupons/usage")
-    fun posUsage(): Nothing = notImplemented("クーポン利用更新（POS）")
-
-    /** 顧客別クーポン移行（ID統合） */
-    @Operation(summary = "顧客別クーポン移行（ID統合）")
-    @PutMapping("/members/coupons/transfer")
-    fun transfer(): Nothing = notImplemented("顧客別クーポン移行（ID統合）")
-
-    /** 顧客別クーポン統合（ID統合） */
-    @Operation(summary = "顧客別クーポン統合（ID統合）")
-    @PutMapping("/members/coupons/migrate")
-    fun migrate(): Nothing = notImplemented("顧客別クーポン統合（ID統合）")
-
-    /** 顧客別クーポン削除（ID統合） */
-    @Operation(summary = "顧客別クーポン削除（ID統合）")
-    @DeleteMapping("/members/coupons/delete")
-    fun memberCouponDelete(): Nothing = notImplemented("顧客別クーポン削除（ID統合）")
 
     /** 店舗用クーポン詳細情報取得（PIT） */
     @Operation(summary = "店舗用クーポン詳細情報取得（PIT）")

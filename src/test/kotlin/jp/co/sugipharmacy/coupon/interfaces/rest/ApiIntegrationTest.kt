@@ -9,7 +9,6 @@ import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
@@ -190,9 +189,11 @@ class ApiIntegrationTest {
     @Test
     fun `MVP対象外のAPIは 501 Not Implemented`() {
         mockMvc.perform(get("/coupons/details")).andExpect(status().isNotImplemented)
-        mockMvc.perform(put("/coupons/selection").contentType(MediaType.APPLICATION_JSON).content("{}"))
-            .andExpect(status().isNotImplemented)
+        mockMvc.perform(get("/cms/coupons/existence")).andExpect(status().isNotImplemented)
+        mockMvc.perform(get("/smc/coupons")).andExpect(status().isNotImplemented)
+        mockMvc.perform(get("/stores/coupons")).andExpect(status().isNotImplemented)
+        mockMvc.perform(get("/products/coupon-ids")).andExpect(status().isNotImplemented)
+        postJson("/smooth/coupons/registrability", "{}").andExpect(status().isNotImplemented)
         postJson("/segments/distribution", "{}").andExpect(status().isNotImplemented)
-        mockMvc.perform(get("/pos/coupons/selected")).andExpect(status().isNotImplemented)
     }
 }

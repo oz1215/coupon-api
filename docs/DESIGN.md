@@ -40,6 +40,16 @@ NCP-2892 クーポン基盤刷新の**実行時API面**。README の設計方針
 
 `domain`（Spring・インフラ非依存の純Kotlin）→ `application`（ユースケース＋ポート定義）→ `infrastructure`（アダプタ）/ `interfaces`（RESTコントローラ・DTO Bean Validation・エラー写像）。ドメインの `DomainValidationError` は `interfaces/rest/ApiExceptionHandler` が 400 に写像する。ドメインは HTTP を知らない。
 
+## member-coupon-state（内包モジュール）
+
+会員キーの状態（選択・お気に入り・消費済み、および付与・ID統合のスタブ）は、coupon-api **内の別境界づけられたコンテキスト** `member` パッケージ（`jp.co.sugipharmacy.coupon.member` — 配下に自前の `domain / application / infrastructure / interfaces/rest`）として持つ。別サービスには**しない** — 物理分割は運用上の力学（スケール・チーム分割・デプロイ独立の必要）が実証されるまで先送りする。境界はパッケージとテストで守れるため、いま分割しても分散化のコストだけが先行する。
+
+member-agnostic な該当判定エンジンを毀損しないためのガードレールは3つ。
+
+1. **別モジュール・別データ所有。** `member` は自前のストア（`InMemoryMemberCouponStateRepository` — (memberId, couponId) キー）だけを読み書きし、クーポンマスタ・配布ルールのリポジトリへは書かない。保持するのは会員の**操作状態のみ** — 会員属性は持たず（プロファイルストアの領分）、「配布された」という事前紐づけレコードも作らない。
+2. **依存は一方向（member → eligibility のみ）。** eligibility 側（`domain/` `application/` `infrastructure/` `interfaces/`）から `member` パッケージへの import を禁止する。`ArchitectureTest`（ArchUnit）がビルド毎に強制する（ドメイン純度も同テストで強制）。
+3. **差し引きは合成層でのみ行い、純粋な eligibility を残す。** `POST /coupons/eligibility` は差し引き前の生集合（該当SEGMENT ∪ ALL）を返し続ける。表示一覧 = eligibility − 消費済み − SUSPENDED の合成は `member` の `MemberCouponListService`（`POST /members/{memberId}/coupon-list`）だけが行う。属性はリクエストで受け取る（BFF がプロファイルストアから渡す）ため、合成エンドポイントでも member-agnostic は保たれる。
+
 ## APIリファレンス（生成物・手書き禁止）
 
 エンドポイントの正はコード（コントローラ・DTO の OpenAPI アノテーション）であり、散文の仕様書は別途維持しない。
@@ -49,11 +59,13 @@ NCP-2892 クーポン基盤刷新の**実行時API面**。README の設計方針
 
 ## MVP境界（スタブ = 501）
 
-クーポン詳細/全件取得・選択更新・お気に入り更新・ウェルカム/イベント登録・POS選択/利用更新・ID統合（移行/統合/削除）・PIT店舗詳細・在庫クーポンID一覧・CMS存在確認・Smooth登録可否・SMC取得・セグメント配布API。`interfaces/rest/StubsController.kt` に列挙。
+- クーポン読み取りモデル・外部連携（クーポン詳細/全件取得・PIT店舗詳細・在庫クーポンID一覧・CMS存在確認・Smooth登録可否・SMC取得・セグメント配布API）: `interfaces/rest/StubsController.kt`。
+- 会員ライフサイクル（ウェルカム/イベント登録・ID統合の移行/統合/退会削除）: 会員キー状態を書き換える操作なので `member/interfaces/rest/MemberCouponStubsController.kt` が持つ（将来の実装先＝member モジュール）。
+- 選択更新・お気に入り更新・POS選択取得/利用更新はスタブを卒業し、`member` モジュールの実装済みエンドポイント（`/members/{memberId}/...`）になった。
 
 ## 対象外（本リポジトリでは作らない）
 
 - ユーザプロファイルストア（会員属性の保管）— 別プロダクト。
-- BFF側 eligibility キャッシュ、消費済み・選択状態の差し引き。
+- BFF側 eligibility キャッシュ。BFF 経路での表示直前差し引きは引き続き BFF の責務（本体の合成エンドポイントは member モジュール側にのみ存在する）。
 - OpenSearch の実配線・接続設定、移行・並行稼働バッチ。
 - 管理コンソール（登録・編集・承認・テンプレート・CSV）— `coupon-admin`。
