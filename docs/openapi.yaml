@@ -1,0 +1,388 @@
+openapi: 3.1.0
+info:
+  title: coupon-api
+  description: クーポン基盤の実行時統合API。会員×クーポンの事前紐づけを持たず、会員属性を受け取って該当クーポンを判定・返却する。
+  version: 0.1.0
+servers:
+- url: http://localhost:8080
+  description: Generated server url
+tags:
+- name: coupons
+  description: クーポンマスタ登録・該当判定（eligibility）・緊急停止一覧
+- name: distribution-rules
+  description: 配布ルール（逆引き該当判定の条件）の事前登録
+- name: stubs
+  description: MVP対象外のAPI面（NCP-2892 API仕様には載るが本MVPでは未実装）。常に 501 を返す。
+paths:
+  /pos/coupons/usage:
+    put:
+      tags:
+      - stubs
+      summary: クーポン利用更新（POS）
+      operationId: posUsage
+      responses:
+        "501":
+          description: MVP対象外（未実装）
+  /members/coupons/transfer:
+    put:
+      tags:
+      - stubs
+      summary: 顧客別クーポン移行（ID統合）
+      operationId: transfer
+      responses:
+        "501":
+          description: MVP対象外（未実装）
+  /members/coupons/migrate:
+    put:
+      tags:
+      - stubs
+      summary: 顧客別クーポン統合（ID統合）
+      operationId: migrate
+      responses:
+        "501":
+          description: MVP対象外（未実装）
+  /coupons/selection:
+    put:
+      tags:
+      - stubs
+      summary: クーポン選択更新
+      operationId: selection
+      responses:
+        "501":
+          description: MVP対象外（未実装）
+  /coupons/favorite:
+    put:
+      tags:
+      - stubs
+      summary: クーポンお気に入り更新
+      operationId: favorite
+      responses:
+        "501":
+          description: MVP対象外（未実装）
+  /smooth/coupons/registrability:
+    post:
+      tags:
+      - stubs
+      summary: クーポン登録可否（Smooth）
+      operationId: smoothRegistrability
+      responses:
+        "501":
+          description: MVP対象外（未実装）
+  /segments/distribution:
+    post:
+      tags:
+      - stubs
+      summary: セグメント配布API（SMC / DMP・新設）
+      operationId: segmentDistribution
+      responses:
+        "501":
+          description: MVP対象外（未実装）
+  /distribution-rules:
+    post:
+      tags:
+      - distribution-rules
+      summary: 配布ルールの事前登録
+      description: 条件は簡易形（rules 配列＝eq の OR）またはリッチ形（and/or＋eq/gte/lte/gt/lt/in）。登録時に
+        AST へ正規化され、不正なら 400。
+      operationId: register
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterDistributionRuleRequest"
+        required: true
+      responses:
+        "201":
+          description: 登録済み
+        "400":
+          description: 条件の正規化・検証エラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /coupons:
+    post:
+      tags:
+      - coupons
+      summary: クーポンマスタ登録（upsert）
+      description: eligibility 判定のためのシードパス。同一 couponId は上書き。
+      operationId: register_1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterCouponRequest"
+        required: true
+      responses:
+        "201":
+          description: 登録済み
+        "400":
+          description: 入力検証・ドメイン検証エラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /coupons/welcome:
+    post:
+      tags:
+      - stubs
+      summary: ウェルカムクーポン登録
+      operationId: welcome
+      responses:
+        "501":
+          description: MVP対象外（未実装）
+  /coupons/event:
+    post:
+      tags:
+      - stubs
+      summary: イベント型クーポン登録
+      operationId: event
+      responses:
+        "501":
+          description: MVP対象外（未実装）
+  /coupons/eligibility:
+    post:
+      tags:
+      - coupons
+      summary: クーポン一覧取得（属性に基づく該当判定＋全員配信の付与）
+      description: percolate 該当の SEGMENT（有効期間内）∪ 有効期間内の ALL。消費済み・選択状態・SUSPENDED の差し引きは行わない（BFF
+        の責務）。
+      operationId: eligibility
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EligibilityRequest"
+        required: true
+      responses:
+        "200":
+          description: 該当クーポン（ID＋distributionType）の一覧
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EligibilityResponse"
+        "400":
+          description: 属性・判定基準時刻の検証エラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /stores/coupons:
+    get:
+      tags:
+      - stubs
+      summary: 店舗用クーポン詳細情報取得（PIT）
+      operationId: storeCoupons
+      responses:
+        "501":
+          description: MVP対象外（未実装）
+  /smc/coupons:
+    get:
+      tags:
+      - stubs
+      summary: クーポン情報取得（SMC）
+      operationId: smcCoupons
+      responses:
+        "501":
+          description: MVP対象外（未実装）
+  /products/coupon-ids:
+    get:
+      tags:
+      - stubs
+      summary: 商品紐づきクーポンID一覧取得（在庫）
+      operationId: productCouponIds
+      responses:
+        "501":
+          description: MVP対象外（未実装）
+  /pos/coupons/selected:
+    get:
+      tags:
+      - stubs
+      summary: 使用済み・顧客選択クーポン取得（POS）
+      operationId: posSelected
+      responses:
+        "501":
+          description: MVP対象外（未実装）
+  /coupons/suspended:
+    get:
+      tags:
+      - coupons
+      summary: 緊急停止中クーポンID一覧
+      description: BFF が表示直前に eligibility 結果から差し引く（キャッシュ TTL に依らず即時反映）。
+      operationId: suspended
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SuspendedCouponsResponse"
+  /coupons/details:
+    get:
+      tags:
+      - stubs
+      summary: クーポン詳細情報取得 / 全件取得
+      operationId: couponDetails
+      responses:
+        "501":
+          description: MVP対象外（未実装）
+  /cms/coupons/existence:
+    get:
+      tags:
+      - stubs
+      summary: クーポン存在確認（CMS）
+      operationId: cmsExistence
+      responses:
+        "501":
+          description: MVP対象外（未実装）
+  /members/coupons/delete:
+    delete:
+      tags:
+      - stubs
+      summary: 顧客別クーポン削除（ID統合）
+      operationId: memberCouponDelete
+      responses:
+        "501":
+          description: MVP対象外（未実装）
+components:
+  schemas:
+    RegisterDistributionRuleRequest:
+      type: object
+      description: 配布ルール事前登録リクエスト
+      properties:
+        couponId:
+          type: string
+          description: 対象クーポンID
+          example: CP-2026-0001
+          minLength: 1
+        condition:
+          description: "配布条件。簡易形 {\"rules\":[{\"key\",\"value\"}...]}（eq の OR）またはリ\
+            ッチ形 {\"and\"/\"or\":[...]}＋eq/gte/lte/gt/lt/in。"
+          example:
+            and:
+            - key: age
+              op: gte
+              value: 20
+            - key: age
+              op: lte
+              value: 39
+        validFrom:
+          type: string
+          format: date-time
+          description: ルール有効期間の開始（含む）
+          example: 2026-07-01T00:00:00Z
+        validTo:
+          type: string
+          format: date-time
+          description: ルール有効期間の終了（含む）
+          example: 2026-07-31T23:59:59Z
+      required:
+      - condition
+      - couponId
+      - validFrom
+      - validTo
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+      - message
+    RegisterCouponRequest:
+      type: object
+      description: クーポンマスタ登録（upsert）リクエスト
+      properties:
+        couponId:
+          type: string
+          description: クーポンID
+          example: CP-2026-0001
+          minLength: 1
+        distributionType:
+          type: string
+          description: 配布種別。ALL=全員配信 / SEGMENT=属性該当 / INDIVIDUAL=個別付与（属性では決まらない）
+          enum:
+          - ALL
+          - SEGMENT
+          - INDIVIDUAL
+        validFrom:
+          type: string
+          format: date-time
+          description: 有効期間の開始（含む）
+          example: 2026-07-01T00:00:00Z
+        validTo:
+          type: string
+          format: date-time
+          description: 有効期間の終了（含む）
+          example: 2026-07-31T23:59:59Z
+        status:
+          type: string
+          default: ACTIVE
+          description: 状態。SUSPENDED は緊急停止中（/coupons/suspended に載る）
+          enum:
+          - ACTIVE
+          - SUSPENDED
+      required:
+      - couponId
+      - distributionType
+      - validFrom
+      - validTo
+    EligibilityRequest:
+      type: object
+      description: 該当判定（eligibility）リクエスト
+      properties:
+        attributes:
+          type: object
+          additionalProperties: {}
+          description: 1会員分の属性。BFF がプロファイルストアから取得して渡す（本サービスは保持しない）。
+          example:
+            age: 25
+            gender: female
+            store: "1024"
+        at:
+          type: string
+          format: date-time
+          description: 判定基準時刻。省略時はサーバの現在時刻。
+          example: 2026-07-07T09:00:00Z
+      required:
+      - attributes
+    EligibilityResponse:
+      type: object
+      description: 該当判定（eligibility）レスポンス
+      properties:
+        coupons:
+          type: array
+          items:
+            $ref: "#/components/schemas/EligibleCouponResponse"
+      required:
+      - coupons
+    EligibleCouponResponse:
+      type: object
+      description: 該当クーポン（IDと配布種別のみ。詳細・画像・並び順の整形は BFF/CMS 側）
+      properties:
+        couponId:
+          type: string
+          description: クーポンID
+          example: CP-2026-0001
+        distributionType:
+          type: string
+          description: 配布種別（ALL または SEGMENT。INDIVIDUAL は eligibility の対象外）
+          enum:
+          - ALL
+          - SEGMENT
+          - INDIVIDUAL
+      required:
+      - couponId
+      - distributionType
+    SuspendedCouponsResponse:
+      type: object
+      description: 緊急停止中クーポンID一覧。BFF が表示直前に差し引く。
+      properties:
+        couponIds:
+          type: array
+          description: SUSPENDED 状態のクーポンID
+          example:
+          - CP-2026-0009
+          items:
+            type: string
+      required:
+      - couponIds

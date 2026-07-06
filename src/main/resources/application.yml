@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: coupon-api
+
+springdoc:
+  # ControllerAdvice 由来の 400 を全操作へ自動付与しない。
+  # エラー応答は各 @Operation / @ApiResponse で明示する（スタブは 501 のみ）。
+  override-with-generic-response: false
+
+coupon:
+  # 逆引き該当判定の実装切替（型は一つ、実行は複数）。
+  #   in-memory  : 既定。外部インフラゼロで動く（開発・テスト・MVP検証用）。
+  #   opensearch : 本番規模の percolator スケルトン（未実装・配線のみ）。
+  percolator: in-memory
