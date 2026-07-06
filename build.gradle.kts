@@ -26,10 +26,18 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9")
 
+    // OpenSearch percolator アダプタ（coupon.percolator=opensearch のときのみ配線される）
+    implementation("org.opensearch.client:opensearch-java:2.22.0")
+    implementation("org.opensearch.client:opensearch-rest-client:2.19.1")
+
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     // 依存方向の強制（eligibility 側 → member モジュールへの依存を禁止する）
     testImplementation("com.tngtech.archunit:archunit-junit5:1.4.1")
+    // OpenSearch percolator の実機統合テスト（Docker が無ければ skip）
+    testImplementation("org.testcontainers:testcontainers")
+    testImplementation("org.testcontainers:junit-jupiter")
+    testImplementation("org.opensearch:opensearch-testcontainers:2.1.3")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

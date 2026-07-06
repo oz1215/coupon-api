@@ -10,5 +10,11 @@ springdoc:
 coupon:
   # 逆引き該当判定の実装切替（型は一つ、実行は複数）。
   #   in-memory  : 既定。外部インフラゼロで動く（開発・テスト・MVP検証用）。
-  #   opensearch : 本番規模の percolator スケルトン（未実装・配線のみ）。
+  #   opensearch : 本番規模の percolator 実装（要 OpenSearch 2.x — `docker compose up` で起動可）。
   percolator: in-memory
+  # coupon.percolator=opensearch のときのみ使用される接続設定（既定では未使用）。
+  opensearch:
+    host: localhost
+    port: 9200
+    scheme: http
+    index: distribution-rules
