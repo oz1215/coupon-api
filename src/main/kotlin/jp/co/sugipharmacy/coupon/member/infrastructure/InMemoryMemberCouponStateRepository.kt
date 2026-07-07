@@ -24,4 +24,8 @@ class InMemoryMemberCouponStateRepository : MemberCouponStateRepository {
 
     override fun findByMember(memberId: String): List<MemberCouponState> =
         store.values.filter { it.memberId == memberId }
+
+    override fun deleteByMember(memberId: String) {
+        store.keys.removeIf { it.first == memberId }
+    }
 }

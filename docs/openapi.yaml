@@ -83,21 +83,39 @@ paths:
       tags:
       - member-coupon-state
       summary: 顧客別クーポン移行（ID統合）
-      description: 旧IDから新IDへ会員キー状態を移す。MVP対象外・501。
+      description: 旧ID（fromMemberId）の会員キー状態をすべて新ID（toMemberId）へ移す。同一 couponId が衝突したら各フラグ（used/granted/selected/favorite）の
+        OR でマージし、移行後に旧IDの状態を空にする。
       operationId: transfer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IdIntegrationRequest"
+        required: true
       responses:
-        "501":
-          description: MVP対象外（未実装）
+        "200":
+          description: 移行済み
+        "400":
+          description: 入力検証エラー（同一ID・空IDなど）
   /members/coupons/migrate:
     put:
       tags:
       - member-coupon-state
       summary: 顧客別クーポン統合（ID統合）
-      description: 複数IDの会員キー状態を統合する。MVP対象外・501。
+      description: fromMemberId の会員キー状態を toMemberId へ統合（和集合）する。同一 couponId の衝突は各フラグの
+        OR でマージし、統合後に fromMemberId の状態を空にする。レガシーの会員種別パターン分岐は MVP 対象外（transfer と同じマージ規則へ正規化）。
       operationId: migrate
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IdIntegrationRequest"
+        required: true
       responses:
-        "501":
-          description: MVP対象外（未実装）
+        "200":
+          description: 統合済み
+        "400":
+          description: 入力検証エラー（同一ID・空IDなど）
   /smooth/coupons/registrability:
     post:
       tags:
@@ -120,18 +138,30 @@ paths:
     post:
       tags:
       - member-coupon-state
-      summary: ウェルカムクーポン登録
-      description: 入会時の個別付与（INDIVIDUAL）。MVP対象外・501。
+      summary: ウェルカムクーポン登録（INDIVIDUAL の個別付与）
+      description: "入会を契機に INDIVIDUAL クーポンを会員へ付与する。クーポンマスタに存在しない、または INDIVIDUAL 以外\
+        の couponId は 400。付与済み INDIVIDUAL は表示一覧の合成（POST /members/{memberId}/coupon-list）\
+        にのみ現れ、POST /coupons/eligibility の生集合には現れない。"
       operationId: welcome
       parameters:
       - name: memberId
         in: path
+        description: 会員ID
         required: true
         schema:
           type: string
+        example: M-000123
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GrantCouponRequest"
+        required: true
       responses:
-        "501":
-          description: MVP対象外（未実装）
+        "201":
+          description: 付与済み
+        "400":
+          description: クーポンが存在しない／INDIVIDUAL でない／入力検証エラー
   /members/{memberId}/coupons/usage:
     post:
       tags:
@@ -160,18 +190,29 @@ paths:
     post:
       tags:
       - member-coupon-state
-      summary: イベント型クーポン登録
-      description: イベント起点の個別付与（INDIVIDUAL）。MVP対象外・501。
+      summary: イベント型クーポン登録（INDIVIDUAL の個別付与）
+      description: イベントを契機に INDIVIDUAL クーポンを会員へ付与する。付与の意味・検証はウェルカムと同一（契機が違うだけ）。クーポンマスタに存在しない、または
+        INDIVIDUAL 以外の couponId は 400。
       operationId: event
       parameters:
       - name: memberId
         in: path
+        description: 会員ID
         required: true
         schema:
           type: string
+        example: M-000123
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GrantCouponRequest"
+        required: true
       responses:
-        "501":
-          description: MVP対象外（未実装）
+        "201":
+          description: 付与済み
+        "400":
+          description: クーポンが存在しない／INDIVIDUAL でない／入力検証エラー
   /members/{memberId}/coupon-list:
     post:
       tags:
@@ -360,17 +401,19 @@ paths:
       tags:
       - member-coupon-state
       summary: 顧客別クーポン削除（退会）
-      description: 退会に伴い会員キー状態を削除する。MVP対象外・501。
+      description: 退会に伴い会員キー状態（選択・お気に入り・消費済み・付与済み）をすべて削除する。冪等。
       operationId: withdraw
       parameters:
       - name: memberId
         in: path
+        description: 会員ID
         required: true
         schema:
           type: string
+        example: M-000123
       responses:
-        "501":
-          description: MVP対象外（未実装）
+        "204":
+          description: 削除済み
 components:
   schemas:
     SelectionUpdateRequest:
@@ -393,6 +436,34 @@ components:
           example: true
       required:
       - favorite
+    IdIntegrationRequest:
+      type: object
+      description: ID統合リクエスト（移行 transfer / 統合 migrate 共通）。from の会員キー状態を to へ移す。
+      properties:
+        fromMemberId:
+          type: string
+          description: 移行元の会員ID
+          example: M-000123
+          minLength: 1
+        toMemberId:
+          type: string
+          description: 移行先の会員ID
+          example: M-000456
+          minLength: 1
+      required:
+      - fromMemberId
+      - toMemberId
+    GrantCouponRequest:
+      type: object
+      description: 個別クーポン付与リクエスト（ウェルカム/イベント登録）。対象は INDIVIDUAL クーポンのみ。
+      properties:
+        couponId:
+          type: string
+          description: 付与するクーポンID（クーポンマスタに登録済みの INDIVIDUAL）
+          example: IND-2026-0001
+          minLength: 1
+      required:
+      - couponId
     CouponUsageRequest:
       type: object
       description: クーポン利用更新（POS）リクエスト。会計で利用されたクーポンを消費済みにする。

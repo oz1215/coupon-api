@@ -35,4 +35,15 @@ class CouponService(
     /** 緊急停止中クーポンIDの小さな一覧。BFF が表示直前に差し引く。 */
     fun getSuspendedCouponIds(): List<String> =
         coupons.findSuspended().map { it.couponId }
+
+    /**
+     * クーポンマスタの読み取り専用参照。member モジュールが個別付与（INDIVIDUAL）の
+     * 検証・合成に使う（依存方向は member → eligibility の一方向のまま）。
+     */
+    fun findCoupon(couponId: String): Coupon? =
+        coupons.findByIds(listOf(couponId)).firstOrNull()
+
+    /** 同上（複数ID版）。存在しないIDは黙って落とす。 */
+    fun findCoupons(couponIds: Collection<String>): List<Coupon> =
+        coupons.findByIds(couponIds)
 }

@@ -14,4 +14,7 @@ interface MemberCouponStateRepository {
     fun find(memberId: String, couponId: String): MemberCouponState?
 
     fun findByMember(memberId: String): List<MemberCouponState>
+
+    /** 会員の全状態を削除する（退会・ID統合の移行元クリア）。 */
+    fun deleteByMember(memberId: String)
 }

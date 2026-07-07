@@ -38,6 +38,14 @@ class MemberCouponStateService(
     fun getUsedCouponIds(memberId: String): Set<String> =
         states.findByMember(memberId).filter { it.used }.map { it.couponId }.toSet()
 
+    /** 個別付与（INDIVIDUAL）の記録。付与の妥当性検証は MemberCouponGrantService が行う。 */
+    fun setGranted(memberId: String, couponId: String) {
+        upsert(memberId, couponId) { it.copy(granted = true) }
+    }
+
+    fun getGrantedCouponIds(memberId: String): Set<String> =
+        states.findByMember(memberId).filter { it.granted }.map { it.couponId }.toSet()
+
     private fun upsert(memberId: String, couponId: String, mutate: (MemberCouponState) -> MemberCouponState) {
         val current = states.find(memberId, couponId) ?: MemberCouponState(memberId, couponId)
         states.save(mutate(current))

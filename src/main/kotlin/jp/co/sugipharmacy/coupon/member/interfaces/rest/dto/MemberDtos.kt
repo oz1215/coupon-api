@@ -2,6 +2,7 @@ package jp.co.sugipharmacy.coupon.member.interfaces.rest.dto
 
 import io.swagger.v3.oas.annotations.media.ArraySchema
 import io.swagger.v3.oas.annotations.media.Schema
+import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotEmpty
 import jakarta.validation.constraints.NotNull
 import jp.co.sugipharmacy.coupon.domain.coupon.DistributionType
@@ -60,4 +61,18 @@ data class CouponUsageRequest(
 data class SelectedCouponsResponse(
     @field:Schema(description = "選択中のクーポンID", example = "[\"CP-2026-0001\"]")
     val couponIds: List<String>,
+)
+
+@Schema(description = "個別クーポン付与リクエスト（ウェルカム/イベント登録）。対象は INDIVIDUAL クーポンのみ。")
+data class GrantCouponRequest(
+    @field:Schema(description = "付与するクーポンID（クーポンマスタに登録済みの INDIVIDUAL）", example = "IND-2026-0001")
+    @field:NotBlank val couponId: String,
+)
+
+@Schema(description = "ID統合リクエスト（移行 transfer / 統合 migrate 共通）。from の会員キー状態を to へ移す。")
+data class IdIntegrationRequest(
+    @field:Schema(description = "移行元の会員ID", example = "M-000123")
+    @field:NotBlank val fromMemberId: String,
+    @field:Schema(description = "移行先の会員ID", example = "M-000456")
+    @field:NotBlank val toMemberId: String,
 )
