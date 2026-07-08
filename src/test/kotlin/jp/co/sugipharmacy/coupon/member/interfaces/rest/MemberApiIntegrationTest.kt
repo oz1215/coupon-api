@@ -56,23 +56,25 @@ class MemberApiIntegrationTest {
         registerCoupon("ALL-KEEP")
         registerCoupon("ALL-USED")
         registerCoupon("ALL-SUS", status = "SUSPENDED")
-        registerCoupon("SEG-20S", distributionType = "SEGMENT")
+        // SEGMENT クーポン＋配布ルールは coupon-admin のイベントを購読して投影する（外部登録APIは廃止）
         postJson(
-            "/distribution-rules",
+            "/internal/events",
             """
             {
-              "couponId": "SEG-20S",
-              "condition": {
-                "and": [
-                  { "key": "age", "operator": "gte", "value": 20 },
-                  { "key": "age", "operator": "lte", "value": 29 }
-                ]
-              },
-              "validFrom": "2026-07-01T00:00:00Z",
-              "validTo": "2026-07-31T23:59:59Z"
+              "eventId": "evt-seg-20s", "type": "CouponApproved", "version": 1,
+              "occurredAt": "2026-07-01T00:00:00Z",
+              "data": {
+                "couponId": "SEG-20S", "schemaVersion": "1.0",
+                "distributionType": "SEGMENT", "status": "ACTIVE",
+                "effectiveFrom": "2026-07-01T00:00:00Z", "effectiveTo": "2026-07-31T23:59:59Z",
+                "condition": { "op": "and", "nodes": [
+                  { "op": "gte", "attr": "age", "value": 20 },
+                  { "op": "lte", "attr": "age", "value": 29 }
+                ] }
+              }
             }
             """.trimIndent(),
-        ).andExpect(status().isCreated)
+        ).andExpect(status().isAccepted)
 
         // 消費前: eligibility（生集合）にも member の表示一覧にも4件とも出る
         postJson("/members/M-1/coupon-list", listBody)

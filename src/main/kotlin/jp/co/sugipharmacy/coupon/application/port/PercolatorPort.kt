@@ -17,4 +17,10 @@ interface PercolatorPort {
 
     /** 属性に該当し、かつルール有効期間内（at 時点）のクーポンIDを返す。 */
     fun percolate(attributes: MemberAttributes, at: Instant): Set<String>
+
+    /** 指定クーポンの配布ルールを全て削除する（更新の置換・削除イベント・全件resync 用）。 */
+    fun removeByCoupon(couponId: String)
+
+    /** 全ルールを消す（全件resync でインデックスを作り直す前段）。 */
+    fun clear()
 }

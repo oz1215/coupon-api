@@ -14,9 +14,12 @@ data class RegisterDistributionRuleInput(
 )
 
 /**
- * 配布ルールを条件ASTへ正規化し、逆引きストアへ事前登録する。
- * クーポンマスタの存在は要求しない（登録順序に依存させない）—
- * マスタ未登録のルールは eligibility 側の突合で自然に落ちる。
+ * 配布ルールを条件ASTへ正規化し、逆引きストアへ事前登録する（簡易形/リッチ形パーサ経由）。
+ *
+ * NOTE: 外部の登録APIは廃止済み（登録は coupon-admin、反映はイベント購読
+ * ＝[jp.co.sugipharmacy.coupon.application.event.EventIngestionService] が正準ASTで投影する）。
+ * 本サービスは現在どの口からも呼ばれていない。内部backfill/移行用に残すかは未確定
+ * （変更ブリーフ §4）— 残す場合も投入形式は coupon-rule-schema（正準AST）へ寄せる想定。TODO。
  */
 @Service
 class DistributionRuleService(

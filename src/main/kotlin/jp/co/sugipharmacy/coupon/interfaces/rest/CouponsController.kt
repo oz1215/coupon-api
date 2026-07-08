@@ -15,6 +15,7 @@ import jp.co.sugipharmacy.coupon.interfaces.rest.dto.EligibleCouponResponse
 import jp.co.sugipharmacy.coupon.interfaces.rest.dto.RegisterCouponRequest
 import jp.co.sugipharmacy.coupon.interfaces.rest.dto.SuspendedCouponsResponse
 import org.springframework.http.HttpStatus
+import org.springframework.http.ProblemDetail
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -36,7 +37,7 @@ class CouponsController(
     @ApiResponse(
         responseCode = "400",
         description = "入力検証・ドメイン検証エラー",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+        content = [Content(mediaType = "application/problem+json", schema = Schema(implementation = ProblemDetail::class))],
     )
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -66,7 +67,7 @@ class CouponsController(
     @ApiResponse(
         responseCode = "400",
         description = "属性・判定基準時刻の検証エラー",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+        content = [Content(mediaType = "application/problem+json", schema = Schema(implementation = ProblemDetail::class))],
     )
     @PostMapping("/eligibility")
     fun eligibility(@Valid @RequestBody request: EligibilityRequest): EligibilityResponse {

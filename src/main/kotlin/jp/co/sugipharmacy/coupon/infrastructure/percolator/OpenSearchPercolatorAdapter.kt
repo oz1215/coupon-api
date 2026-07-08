@@ -95,6 +95,25 @@ class OpenSearchPercolatorAdapter(
             .toSet()
     }
 
+    override fun removeByCoupon(couponId: String) {
+        val request = Request("POST", "/$index/_delete_by_query")
+        request.addParameter("refresh", "true")
+        request.setJsonEntity(
+            objectMapper.writeValueAsString(mapOf("query" to mapOf("term" to mapOf(COUPON_ID_FIELD to couponId)))),
+        )
+        lowLevelClient.performRequest(request)
+    }
+
+    override fun clear() {
+        // インデックスごと作り直す（全件resync の前段）。存在しなければ無害に進む。
+        try {
+            lowLevelClient.performRequest(Request("DELETE", "/$index"))
+        } catch (e: ResponseException) {
+            if (e.response.statusLine.statusCode != 404) throw e
+        }
+        ensureIndex()
+    }
+
     /** インデックスが無ければ percolator マッピング＋動的テンプレート付きで作成する（冪等）。 */
     private fun ensureIndex() {
         if (client.indices().exists { it.index(index) }.value()) return
@@ -126,6 +145,7 @@ class OpenSearchPercolatorAdapter(
         when (condition) {
             is Condition.And -> condition.conditions.forEach { collectFieldTypes(it, into) }
             is Condition.Or -> condition.conditions.forEach { collectFieldTypes(it, into) }
+            is Condition.Not -> collectFieldTypes(condition.condition, into)
             is Condition.Comparison -> when (condition.operator) {
                 Condition.Operator.EQ, Condition.Operator.IN ->
                     condition.values.forEach { value ->

@@ -79,4 +79,15 @@ sealed interface Condition {
         override fun evaluate(attributes: MemberAttributes): Boolean =
             conditions.any { it.evaluate(attributes) }
     }
+
+    /**
+     * 否定ノード（正準ASTの `not`）。内側の評価結果を反転する。
+     * 注意: fail-safe の向きも反転する — 内側が「属性欠落＝非該当」に倒れる場合、
+     * `not` の外側では「該当」になる。OpenSearch 側（bool.must_not）も同じ挙動であり、
+     * InMemory との parity は保たれる。
+     */
+    data class Not(val condition: Condition) : Condition {
+        override fun evaluate(attributes: MemberAttributes): Boolean =
+            !condition.evaluate(attributes)
+    }
 }

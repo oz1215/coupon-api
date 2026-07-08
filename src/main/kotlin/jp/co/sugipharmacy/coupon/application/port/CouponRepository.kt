@@ -14,4 +14,10 @@ interface CouponRepository {
 
     /** 緊急停止中クーポン（BFF が差し引くための一覧）。 */
     fun findSuspended(): List<Coupon>
+
+    /** クーポンマスタ投影から削除する（削除イベント用）。存在しなければ無操作。 */
+    fun delete(couponId: String)
+
+    /** 全件削除（全件resync でマスタ投影を作り直す前段）。 */
+    fun deleteAll()
 }

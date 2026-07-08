@@ -26,22 +26,6 @@ data class RegisterCouponRequest(
     val status: CouponStatus = CouponStatus.ACTIVE,
 )
 
-@Schema(description = "配布ルール事前登録リクエスト")
-data class RegisterDistributionRuleRequest(
-    @field:Schema(description = "対象クーポンID", example = "CP-2026-0001")
-    @field:NotBlank val couponId: String,
-    /** 簡易形（rules 配列）またはリッチ形（and/or＋演算子）。ConditionParser が正規化する。 */
-    @field:Schema(
-        description = "配布条件。簡易形 {\"rules\":[{\"key\",\"value\"}...]}（eq の OR）またはリッチ形 {\"and\"/\"or\":[...]}＋eq/gte/lte/gt/lt/in。",
-        example = """{"and":[{"key":"age","op":"gte","value":20},{"key":"age","op":"lte","value":39}]}""",
-    )
-    @field:NotNull val condition: Any,
-    @field:Schema(description = "ルール有効期間の開始（含む）", example = "2026-07-01T00:00:00Z")
-    @field:NotNull val validFrom: Instant,
-    @field:Schema(description = "ルール有効期間の終了（含む）", example = "2026-07-31T23:59:59Z")
-    @field:NotNull val validTo: Instant,
-)
-
 @Schema(description = "該当判定（eligibility）リクエスト")
 data class EligibilityRequest(
     /** 1会員分の属性。BFF がプロファイルストアから取得して渡す。本サービスは保持しない。 */

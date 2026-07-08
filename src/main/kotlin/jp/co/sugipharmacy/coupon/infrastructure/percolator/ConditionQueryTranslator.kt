@@ -50,6 +50,9 @@ object ConditionQueryTranslator {
                 "minimum_should_match" to 1,
             ),
         )
+        is Condition.Not -> mapOf(
+            "bool" to mapOf("must_not" to listOf(translate(condition.condition))),
+        )
         is Condition.Comparison -> translateComparison(condition)
     }
 

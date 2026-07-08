@@ -53,8 +53,6 @@ class StubsController {
     @GetMapping("/smc/coupons")
     fun smcCoupons(): Nothing = notImplemented("クーポン情報取得（SMC）")
 
-    /** セグメント配布API（SMC / DMP・新設） */
-    @Operation(summary = "セグメント配布API（SMC / DMP・新設）")
-    @PostMapping("/segments/distribution")
-    fun segmentDistribution(): Nothing = notImplemented("セグメント配布API（SMC / DMP）")
+    // セグメント配布API（旧 SMC/DMP push）は廃止。配布ルールは coupon-admin で登録され、
+    // coupon-api はイベント購読（/internal/events → EventIngestionService）で受領する。
 }

@@ -25,4 +25,12 @@ class InMemoryCouponRepository : CouponRepository {
 
     override fun findSuspended(): List<Coupon> =
         store.values.filter { it.isSuspended }
+
+    override fun delete(couponId: String) {
+        store.remove(couponId)
+    }
+
+    override fun deleteAll() {
+        store.clear()
+    }
 }

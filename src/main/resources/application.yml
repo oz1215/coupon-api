@@ -18,3 +18,11 @@ coupon:
     port: 9200
     scheme: http
     index: distribution-rules
+  # 配布条件（正準AST）の受領時検証の上限。暫定値（coupon-rule-schema / AST仕様 §4 で確定予定）。
+  rule:
+    max-depth: 8
+    max-in-values: 100
+  # イベント取り込みトランスポート。none=購読アダプタ無効（既定）。
+  # sqs=EventBridge→SQS アダプタ（未実装スケルトン）。取り込みは /internal/events でも駆動可。
+  events:
+    transport: none

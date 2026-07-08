@@ -29,4 +29,12 @@ class InMemoryPercolatorAdapter : PercolatorPort {
             .filter { it.matches(attributes, at) }
             .map { it.couponId }
             .toSet()
+
+    override fun removeByCoupon(couponId: String) {
+        rules.removeAll { it.couponId == couponId }
+    }
+
+    override fun clear() {
+        rules.clear()
+    }
 }

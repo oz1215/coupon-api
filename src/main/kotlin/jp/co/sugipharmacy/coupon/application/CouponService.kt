@@ -32,6 +32,11 @@ class CouponService(
         )
     }
 
+    /** クーポンマスタ投影から削除する（削除イベントの投影）。 */
+    fun remove(couponId: String) {
+        coupons.delete(couponId)
+    }
+
     /** 緊急停止中クーポンIDの小さな一覧。BFF が表示直前に差し引く。 */
     fun getSuspendedCouponIds(): List<String> =
         coupons.findSuspended().map { it.couponId }

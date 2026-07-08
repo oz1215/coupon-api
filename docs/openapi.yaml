@@ -4,13 +4,13 @@ info:
   description: クーポン基盤の実行時統合API。会員×クーポンの事前紐づけを持たず、会員属性を受け取って該当クーポンを判定・返却する。
   version: 0.1.0
 servers:
-- url: http://localhost:8080
+- url: http://localhost:8081
   description: Generated server url
 tags:
 - name: coupons
   description: クーポンマスタ登録・該当判定（eligibility）・緊急停止一覧
-- name: distribution-rules
-  description: 配布ルール（逆引き該当判定の条件）の事前登録
+- name: internal-events
+  description: イベント駆動プロジェクションの取り込み口（coupon-admin → EventBridge → 本API）。外部ルール登録APIではない。
 - name: member-coupon-state
   description: 会員キーの状態＝coupon-api内の別モジュール・別データ所有
 - name: stubs
@@ -125,15 +125,6 @@ paths:
       responses:
         "501":
           description: MVP対象外（未実装）
-  /segments/distribution:
-    post:
-      tags:
-      - stubs
-      summary: セグメント配布API（SMC / DMP・新設）
-      operationId: segmentDistribution
-      responses:
-        "501":
-          description: MVP対象外（未実装）
   /members/{memberId}/coupons/welcome:
     post:
       tags:
@@ -242,36 +233,61 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/MemberCouponListResponse"
-  /distribution-rules:
+  /internal/events:
     post:
       tags:
-      - distribution-rules
-      summary: 配布ルールの事前登録
-      description: 条件は簡易形（rules 配列＝eq の OR）またはリッチ形（and/or＋eq/gte/lte/gt/lt/in）。登録時に
-        AST へ正規化され、不正なら 400。
-      operationId: register
+      - internal-events
+      summary: ドメインイベント受領（冪等取り込み）
+      description: coupon-admin の fat event を受領し、percolator＋クーポンマスタ投影を更新する。eventId
+        重複排除＋version の last-writer-wins。不正イベントは適用せず 422（DLQ 相当）。
+      operationId: receive
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/RegisterDistributionRuleRequest"
+              $ref: "#/components/schemas/CouponEventEnvelopeRequest"
         required: true
       responses:
-        "201":
-          description: 登録済み
-        "400":
-          description: 条件の正規化・検証エラー
+        "202":
+          description: 受領（APPLIED / DUPLICATE / STALE）
           content:
-            application/json:
+            '*/*':
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/EventIngestResponse"
+        "422":
+          description: 不正イベント（適用せず DLQ）
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /internal/events/resync:
+    post:
+      tags:
+      - internal-events
+      summary: 全件resync（スナップショット再適用）
+      description: coupon-admin から再発行された現在状態のスナップショットで read model を作り直す。トリガー・頻度（手動/定期/イベント起動）は未確定（変更ブリーフ
+        §4）。
+      operationId: resync
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResyncRequest"
+        required: true
+      responses:
+        "200":
+          description: 再構築完了
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EventIngestResponse"
   /coupons:
     post:
       tags:
       - coupons
       summary: クーポンマスタ登録（upsert）
       description: eligibility 判定のためのシードパス。同一 couponId は上書き。
-      operationId: register_1
+      operationId: register
       requestBody:
         content:
           application/json:
@@ -284,9 +300,9 @@ paths:
         "400":
           description: 入力検証・ドメイン検証エラー
           content:
-            application/json:
+            application/problem+json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ProblemDetail"
   /coupons/eligibility:
     post:
       tags:
@@ -312,9 +328,9 @@ paths:
         "400":
           description: 属性・判定基準時刻の検証エラー
           content:
-            application/json:
+            application/problem+json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ProblemDetail"
   /stores/coupons:
     get:
       tags:
@@ -522,48 +538,115 @@ components:
             $ref: "#/components/schemas/DisplayCouponResponse"
       required:
       - coupons
-    RegisterDistributionRuleRequest:
+    CouponEventDataRequest:
       type: object
-      description: 配布ルール事前登録リクエスト
+      description: イベントペイロード。CouponDeleted は couponId のみ、それ以外は投影に必要な全項目。
       properties:
         couponId:
           type: string
-          description: 対象クーポンID
-          example: CP-2026-0001
           minLength: 1
+        schemaVersion:
+          type: string
+          description: 条件スキーマ版（coupon-rule-schema）
+          example: 1.0
         condition:
-          description: "配布条件。簡易形 {\"rules\":[{\"key\",\"value\"}...]}（eq の OR）またはリ\
-            ッチ形 {\"and\"/\"or\":[...]}＋eq/gte/lte/gt/lt/in。"
-          example:
-            and:
-            - key: age
-              op: gte
-              value: 20
-            - key: age
-              op: lte
-              value: 39
-        validFrom:
+          description: 配布条件（正準AST・coupon-rule-schema 準拠）。SEGMENT のとき必須相当。
+        distributionType:
+          type: string
+          enum:
+          - ALL
+          - SEGMENT
+          - INDIVIDUAL
+        effectiveFrom:
           type: string
           format: date-time
-          description: ルール有効期間の開始（含む）
-          example: 2026-07-01T00:00:00Z
-        validTo:
+          description: 有効期間の開始（含む・RFC 3339）
+          example: 2026-07-01T00:00:00+09:00
+        effectiveTo:
           type: string
           format: date-time
-          description: ルール有効期間の終了（含む）
-          example: 2026-07-31T23:59:59Z
+          description: 有効期間の終了（含む・RFC 3339）
+          example: 2026-07-31T23:59:59+09:00
+        status:
+          type: string
+          enum:
+          - ACTIVE
+          - SUSPENDED
       required:
-      - condition
       - couponId
-      - validFrom
-      - validTo
-    ErrorResponse:
+    CouponEventEnvelopeRequest:
+      type: object
+      description: coupon-admin ドメインイベント（fat event / CloudEvents 風）
+      properties:
+        eventId:
+          type: string
+          description: イベントID（冪等の重複排除キー）
+          example: evt-01H...
+          minLength: 1
+        type:
+          type: string
+          description: イベント型
+          example: CouponApproved
+          minLength: 1
+        version:
+          type: integer
+          format: int64
+          description: クーポンの版（last-writer-wins）
+          example: 7
+        occurredAt:
+          type: string
+          format: date-time
+          description: 発生時刻（RFC 3339）
+          example: 2026-07-09T09:00:00Z
+        traceId:
+          type: string
+          description: W3C Trace Context の相関ID
+          example: 0af7651916cd43dd8448eb211c80319c
+        data:
+          $ref: "#/components/schemas/CouponEventDataRequest"
+      required:
+      - data
+      - eventId
+      - occurredAt
+      - type
+      - version
+    ProblemDetail:
       type: object
       properties:
-        message:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+          format: int32
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri
+        properties:
+          type: object
+          additionalProperties: {}
+    EventIngestResponse:
+      type: object
+      description: 取り込み結果（APPLIED / DUPLICATE / STALE / RESYNCED）
+      properties:
+        outcome:
           type: string
       required:
-      - message
+      - outcome
+    ResyncRequest:
+      type: object
+      description: 全件resync リクエスト（現在状態を表すイベントのスナップショット）
+      properties:
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/CouponEventEnvelopeRequest"
+      required:
+      - events
     RegisterCouponRequest:
       type: object
       description: クーポンマスタ登録（upsert）リクエスト
