@@ -1,6 +1,10 @@
 spring:
   application:
     name: coupon-api
+  mvc:
+    # フレームワーク由来のエラー（404/405/ResponseStatusException 等）も RFC 9457 problem+json で返す。
+    problemdetails:
+      enabled: true
 
 springdoc:
   # ControllerAdvice 由来の 400 を全操作へ自動付与しない。
