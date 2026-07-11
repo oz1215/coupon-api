@@ -1,5 +1,9 @@
 # coupon-api
- 
+
+> **⚠️ このリポジトリは [`oz1215/coupon-platform`](https://github.com/oz1215/coupon-platform) モノレポへ移行しました。**
+> 今後の開発はモノレポで行います（本リポジトリは read-only アーカイブ予定）。
+> 履歴はモノレポの `coupon-api/` に `git subtree` で保存済みです。新しい Issue / PR は coupon-platform へお願いします。
+
 > クーポン基盤の実行時統合API。会員×クーポンの事前紐づけを持たず、会員属性を受け取って該当クーポンを判定・返却する。アプリ / POS / 在庫 / CMS / SMC / DMP など運用時の各システムが利用する。管理面は [`coupon-admin`](#関連リポジトリ) を参照。
  
 <!--
